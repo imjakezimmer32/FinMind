@@ -233,6 +233,36 @@ def test_audit_log_endpoint(client, app_fixture):
     assert "email_hash" not in items[0]
 
 
+def test_audit_log_scoped_by_email_hash_not_recycled_user_id(client, app_fixture):
+    """Deleting a user then reusing the same integer id must not leak audit rows."""
+    auth1 = _register_login(client, email="first-owner@example.com")
+    headers1 = {"Authorization": auth1["Authorization"]}
+    assert client.get("/gdpr/export?format=json", headers=headers1).status_code == 200
+    assert (
+        client.post(
+            "/gdpr/delete-account",
+            json={
+                "password": auth1["password"],
+                "confirm": DELETE_CONFIRMATION_PHRASE,
+            },
+            headers=headers1,
+        ).status_code
+        == 200
+    )
+
+    auth2 = _register_login(client, email="second-owner@example.com")
+    headers2 = {"Authorization": auth2["Authorization"]}
+    r = client.get("/gdpr/audit-log", headers=headers2)
+    assert r.status_code == 200
+    assert r.get_json()["items"] == []
+
+    assert client.get("/gdpr/export?format=json", headers=headers2).status_code == 200
+    r = client.get("/gdpr/audit-log", headers=headers2)
+    items = r.get_json()["items"]
+    assert len(items) == 1
+    assert items[0]["action"] == "PII_EXPORT"
+
+
 def test_delete_revokes_refresh_session(client, app_fixture):
     auth = _register_login(client, email="revoke@example.com")
     headers = {"Authorization": auth["Authorization"]}

@@ -349,10 +349,19 @@ def delete_user_permanently(user: User) -> dict[str, int]:
     return {**counts, "sessions_revoked": revoked}
 
 
-def list_user_audit_logs(user_id: int, limit: int = 50) -> list[dict[str, Any]]:
+def list_user_audit_logs(
+    user_id: int, email: str, limit: int = 50
+) -> list[dict[str, Any]]:
+    """
+    Return privacy events for this account.
+
+    Filter by email_hash (not user_id alone) so recycled SQLite/Postgres
+    identity values cannot surface another person's audit history.
+    """
+    email_digest = hash_email(email)
     rows = (
         db.session.query(GdprAuditLog)
-        .filter_by(user_id=user_id)
+        .filter(GdprAuditLog.email_hash == email_digest)
         .order_by(GdprAuditLog.created_at.desc())
         .limit(max(1, min(limit, 200)))
         .all()

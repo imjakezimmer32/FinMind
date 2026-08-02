@@ -147,4 +147,4 @@ def audit_log():
         limit = int(request.args.get("limit") or 50)
     except ValueError:
         limit = 50
-    return jsonify(items=list_user_audit_logs(uid, limit=limit)), 200
+    return jsonify(items=list_user_audit_logs(uid, user.email, limit=limit)), 200
