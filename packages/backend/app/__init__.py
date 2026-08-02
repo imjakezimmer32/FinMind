@@ -110,11 +110,35 @@ def _ensure_schema_compatibility(app: Flask) -> None:
             NOT NULL DEFAULT 'INR'
             """
         )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS gdpr_audit_logs (
+              id SERIAL PRIMARY KEY,
+              user_id INT,
+              email_hash VARCHAR(64),
+              action VARCHAR(100) NOT NULL,
+              ip_address VARCHAR(64),
+              user_agent VARCHAR(512),
+              details TEXT,
+              created_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_gdpr_audit_logs_user_created
+              ON gdpr_audit_logs(user_id, created_at DESC)
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_gdpr_audit_logs_email_hash
+              ON gdpr_audit_logs(email_hash)
+            """
+        )
         conn.commit()
     except Exception:
-        app.logger.exception(
-            "Schema compatibility patch failed for users.preferred_currency"
-        )
+        app.logger.exception("Schema compatibility patch failed")
         conn.rollback()
     finally:
         conn.close()

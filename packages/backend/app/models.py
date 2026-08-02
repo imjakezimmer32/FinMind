@@ -133,3 +133,19 @@ class AuditLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     action = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class GdprAuditLog(db.Model):
+    """Immutable GDPR compliance audit trail that survives account deletion."""
+
+    __tablename__ = "gdpr_audit_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    # Soft reference only — intentionally NOT a ForeignKey so rows survive
+    # irreversible account deletion for compliance retention.
+    user_id = db.Column(db.Integer, nullable=True)
+    email_hash = db.Column(db.String(64), nullable=True)
+    action = db.Column(db.String(100), nullable=False)
+    ip_address = db.Column(db.String(64), nullable=True)
+    user_agent = db.Column(db.String(512), nullable=True)
+    details = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
