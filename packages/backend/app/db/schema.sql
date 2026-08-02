@@ -123,3 +123,18 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(100) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- GDPR compliance audit trail (no FK to users so records survive erasure)
+CREATE TABLE IF NOT EXISTS gdpr_audit_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INT,
+  email_hash VARCHAR(64) NOT NULL,
+  action VARCHAR(64) NOT NULL,
+  ip_address VARCHAR(64),
+  user_agent VARCHAR(255),
+  details TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_gdpr_audit_email_hash ON gdpr_audit_logs(email_hash);
+CREATE INDEX IF NOT EXISTS idx_gdpr_audit_user_id ON gdpr_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_gdpr_audit_created_at ON gdpr_audit_logs(created_at DESC);

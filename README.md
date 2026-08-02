@@ -66,6 +66,7 @@ OpenAPI: `backend/app/openapi.yaml`
 - Bills: CRUD `/bills`, pay/mark `/bills/{id}/pay`
 - Reminders: CRUD `/reminders`, trigger `/reminders/run`
 - Insights: `/insights/monthly`, `/insights/budget-suggestion`
+- Privacy (GDPR): `/privacy/export`, `/privacy/delete/request`, `/privacy/delete/confirm`, `/privacy/audit`
 
 ## MVP UI/UX Plan
 - Auth screens: register/login.
