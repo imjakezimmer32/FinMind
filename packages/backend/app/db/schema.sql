@@ -123,3 +123,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(100) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Survives account deletion (no FK to users) for GDPR compliance retention.
+CREATE TABLE IF NOT EXISTS gdpr_audit_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INT,
+  email_hash VARCHAR(64),
+  action VARCHAR(100) NOT NULL,
+  ip_address VARCHAR(64),
+  user_agent VARCHAR(512),
+  details TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_gdpr_audit_logs_user_created
+  ON gdpr_audit_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gdpr_audit_logs_email_hash
+  ON gdpr_audit_logs(email_hash);

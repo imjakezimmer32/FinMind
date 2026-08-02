@@ -12,6 +12,7 @@ tags:
   - name: Bills
   - name: Reminders
   - name: Insights
+  - name: GDPR
 paths:
   /auth/register:
     post:
@@ -480,6 +481,111 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+
+  /gdpr/export/preview:
+    get:
+      summary: Preview PII export record counts (no personal payloads)
+      tags: [GDPR]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Record counts for the authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  counts:
+                    type: object
+                    additionalProperties: { type: integer }
+        '401':
+          description: Unauthorized
+  /gdpr/export:
+    get:
+      summary: Download personal data export package
+      description: >
+        Returns a ZIP archive (JSON + CSV) of the caller's personal data by default.
+        Use `format=json` for an inline JSON response. Password hashes are never included.
+      tags: [GDPR]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: format
+          required: false
+          schema: { type: string, enum: [zip, json], default: zip }
+      responses:
+        '200':
+          description: Export package
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '401':
+          description: Unauthorized
+  /gdpr/delete-account:
+    post:
+      summary: Permanently delete the authenticated account
+      description: >
+        Irreversible deletion. Requires the account password and confirm set to
+        DELETE_MY_ACCOUNT. Writes a GDPR audit log (email hash only) that survives deletion.
+      tags: [GDPR]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, confirm]
+              properties:
+                password: { type: string, format: password }
+                confirm: { type: string, example: DELETE_MY_ACCOUNT }
+      responses:
+        '200':
+          description: Account permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  deleted: { type: object, additionalProperties: { type: integer } }
+        '400':
+          description: Missing password or confirmation phrase
+        '401':
+          description: Incorrect password or unauthorized
+  /gdpr/audit-log:
+    get:
+      summary: List GDPR privacy audit events for the current user
+      tags: [GDPR]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: Audit trail entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        action: { type: string }
+                        ip_address: { type: string, nullable: true }
+                        user_agent: { type: string, nullable: true }
+                        details: { type: object, nullable: true }
+                        created_at: { type: string, format: date-time }
+        '401':
+          description: Unauthorized
 
 components:
   securitySchemes:
